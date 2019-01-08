@@ -16,6 +16,26 @@ function requestReview() {
   return StoreReview.requestReview();
 }
 
+function showReviewDialog(storeUrl) {
+	Alert.alert(
+		this.config.title, 
+		this.config.message, 
+		[
+			{ text: this.config.actionLabels.accept, onPress: () => { 
+				if (SKStoreReviewAvailable) {
+					requestReview();
+				} else {
+					Linking.openURL(storeUrl);
+				}
+				RatingsData.recordRated(); 
+				this.config.callbacks.accept();
+			} },
+			{ text: this.config.actionLabels.delay, onPress: () => { this.config.callbacks.delay(); } },
+			{ text: this.config.actionLabels.decline, onPress: () => { RatingsData.recordDecline(); this.config.callbacks.decline(); } },
+		]
+	);
+}
+
 const defaultConfig = {
 	enjoyingMessage: 'Are you enjoying this app?',
 	enjoyingActions: {
@@ -41,6 +61,7 @@ const defaultConfig = {
 	eventsUntilPrompt: 1,
 	usesUntilPrompt: 1,
 	daysBeforeReminding: 1,
+	showIsEnjoyingDialog: true,
 	debug: false,
 };
 
@@ -130,40 +151,28 @@ export default class RatingRequester {
 			'http://itunes.apple.com/WebObjects/MZStore.woa/wa/viewContentsUserReviews?id=' + this.config.iOSAppStoreId + '&pageNumber=0&sortOrdering=2&type=Purple+Software&mt=8' :
 			'market://details?id=' + this.config.androidAppStoreId;
 
-		Alert.alert(
-			this.config.enjoyingMessage,
-			'',
-			[
-				{ text: this.config.enjoyingActions.accept, onPress: () => {
-					this.config.callbacks.enjoyingApp();
-					Alert.alert(
-						this.config.title, 
-						this.config.message, 
-						[
-							{ text: this.config.actionLabels.accept, onPress: () => { 
-								if (SKStoreReviewAvailable) {
-									requestReview();
-								} else {
-									Linking.openURL(storeUrl);
-								}
-								RatingsData.recordRated(); 
-								this.config.callbacks.accept();
-							} },
-							{ text: this.config.actionLabels.delay, onPress: () => { this.config.callbacks.delay(); } },
-							{ text: this.config.actionLabels.decline, onPress: () => { RatingsData.recordDecline(); this.config.callbacks.decline(); } },
-						]
-					);
-				}},
-				{ text: this.config.enjoyingActions.decline, onPress: () => {
-					RatingsData.recordDecline();
-					this.config.callbacks.notEnjoyingApp();
-				}, style: 'cancel'},
-			],
-		)
+		if (this.config.showIsEnjoyingDialog)
+			Alert.alert(
+				this.config.enjoyingMessage,
+				'',
+				[
+					{ text: this.config.enjoyingActions.accept, onPress: () => {
+						this.config.callbacks.enjoyingApp();
+						showReviewDialog(storeUrl);
+					}},
+					{ text: this.config.enjoyingActions.decline, onPress: () => {
+						RatingsData.recordDecline();
+						this.config.callbacks.notEnjoyingApp();
+					}, style: 'cancel'},
+				],
+			);
+		else
+			showReviewDialog(storeUrl);
 
 		// clear the events and uses
 		await RatingsData.clearKeys();
 	}
+
 	async checkToShowDialog() {
 		if (await this.isAwaitingRating()) {
 			this.showRatingDialog();

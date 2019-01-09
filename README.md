@@ -1,4 +1,4 @@
-# rn-rating-requester
+# react-native-rating-request
 
 A React Native component to prompt users for a rating after positive interactions
 
@@ -6,8 +6,8 @@ The Rating Requester is a very simple JS module that you simply instantiate and 
 
 ## Installation
 
-    npm i --save rn-rating-requester
-    react-native link rn-rating-requester
+    npm i --save react-native-rating-request
+    react-native link react-native-rating-request
 
 ## Usage
 
@@ -16,7 +16,7 @@ The Rating Requester is a very simple JS module that you simply instantiate and 
 Import and create a new instantiation of the Rating Requester somewhere in the main portion of your application:
 
 ````javascript
-    import RatingRequester from 'rn-rating-requester';
+    import RatingRequester from 'react-native-rating-request';
     let RatingTracker = new RatingRequester('[your ios app store ID]', '[your android app store id]');
 
     let MyApp = React.createClass({ ... });
@@ -78,7 +78,9 @@ You *must* pass in a string as the first parameter, which is the app store ID of
     eventsUntilPrompt: {number},
     usesUntilPrompt: {number},
     daysBeforeReminding: {number},
+    showIsEnjoyingDialog: {bool},
     debug: {bool},
+    timingFunction: {function}
   }
 ````
 
@@ -93,25 +95,35 @@ You *must* pass in a string as the first parameter, which is the app store ID of
   - `decline`: The "no thanks, I don't want to ever rate this" button label
   - `delay`: The "maybe I'll rate this later if I'm feeling charitable" button label
   - `accept`: The "oh my gosh I love this app so much so I'll rate it right now" button label
-- `timingFunction`: A method that takes the current total count of positive events recorded for the app, and returns if the Requester should display the dialog or not. By default, the timingFunction evaluates as `3^n`, and if `3^n == currentCount` then it returns true/shows the dialog. Source looks like this:
+  - `showIsEnjoyingDialog`: A boolean to show the "Are you enjoying this app?" dialog before showing the rating dialog
+  - `timingFunction`: A method that takes the configuration object, the rated and declined date, the current total count of uses and the current total count of positive events.
 
-```javascript
-timingFunction: function(currentCount) {
-    return currentCount > 1 && Math.log(currentCount) / Math.log(3) % 1 == 0;
-}
-```
 
-## Example
+````javascript
+  timingFunction: (config, ratedTimestamp, declinedTimestamp, lastSeenTimestamp, usesCount, eventCounts) => {
+		let daysSinceLastSeen = Math.floor((Date.now() - parseInt(lastSeenTimestamp))/1000/60/60/24);
+		if (!config.debug && [ratedTimestamp, declinedTimestamp].some((time) => time[1] !== null)) {
+			return false;
+		}
+		
+		return config.debug 
+			|| usesCount >= config.usesUntilPrompt 
+			|| eventCounts >= config.eventsUntilPrompt 
+			|| daysSinceLastSeen > config.daysBeforeReminding;
+	}
+````
 
-To run the example, first run `yarn prep-example` then cd into the example directory and run as you normally would run an example project.
+## Credits
 
-NB: To run on android, you must have `$ANDROID_HOME` defined.
-
-## Notes
-
-As of version 2.0.0 this package is compatible with both iOS and Android.
+Project based on
+[react-native-rating-requestor](https://github.com/jlyman/react-native-rating-requestor)
+and
+[rn-rating-requester](https://github.com/rizzomichaelg/rn-rating-requester)
 
 ## Releases
+
+### 3.2.3
+- Added `showIsEnjoyingDialog` and `timingFunction` configurations
 
 ### 3.1.0
 - Added "Are you enjoying this app?" dialog before actually requesting a rating.
@@ -125,14 +137,7 @@ As of version 2.0.0 this package is compatible with both iOS and Android.
 - Supports Android, requires RN v0.20.0+, and added `showRatingDialog()` thanks to [@maximilianhurl](https://github.com/maximilianhurl).
 
 ### 1.1.0
-- Added an optional callback to `handlePositiveEvent()` that reports on the result of the handling. Props to [@sercanov](https://github.com/
-sercanov).
+- Added an optional callback to `handlePositiveEvent()` that reports on the result of the handling. Props to [@sercanov](https://github.com/sercanov).
 
 ### 1.0.0
 - Initial release
-
-## Questions?
-
-Feel free to contact me:
-
-- Twitter: [@MichaelGRizzo](https://www.twitter.com/MichaelGRizzo)

@@ -16,24 +16,25 @@ function requestReview() {
   return StoreReview.requestReview();
 }
 
-function showReviewDialog(storeUrl) {
-	Alert.alert(
-		this.config.title, 
-		this.config.message, 
-		[
-			{ text: this.config.actionLabels.accept, onPress: () => { 
-				if (SKStoreReviewAvailable) {
-					requestReview();
-				} else {
+function showReviewDialog(config, storeUrl) {
+	
+	if (Platform.OS === 'ios' && SKStoreReviewAvailable)
+		StoreReview.requestReview();
+	else {
+		Alert.alert(
+			config.title, 
+			config.message, 
+			[
+				{ text: config.actionLabels.accept, onPress: () => { 
 					Linking.openURL(storeUrl);
-				}
-				RatingsData.recordRated(); 
-				this.config.callbacks.accept();
-			} },
-			{ text: this.config.actionLabels.delay, onPress: () => { this.config.callbacks.delay(); } },
-			{ text: this.config.actionLabels.decline, onPress: () => { RatingsData.recordDecline(); this.config.callbacks.decline(); } },
-		]
-	);
+					RatingsData.recordRated(); 
+					config.callbacks.accept();
+				} },
+				{ text: config.actionLabels.delay, onPress: () => { config.callbacks.delay(); } },
+				{ text: config.actionLabels.decline, onPress: () => { RatingsData.recordDecline(); config.callbacks.decline(); } },
+			]
+		);
+	}
 }
 
 const defaultConfig = {
@@ -63,6 +64,17 @@ const defaultConfig = {
 	daysBeforeReminding: 1,
 	showIsEnjoyingDialog: true,
 	debug: false,
+	timingFunction: (config, ratedTimestamp, declinedTimestamp, lastSeenTimestamp, usesCount, eventCounts) => {
+		let daysSinceLastSeen = Math.floor((Date.now() - parseInt(lastSeenTimestamp))/1000/60/60/24);
+		if (!config.debug && [ratedTimestamp, declinedTimestamp].some((time) => time[1] !== null)) {
+			return false;
+		}
+		
+		return config.debug 
+			|| usesCount >= config.usesUntilPrompt 
+			|| eventCounts >= config.eventsUntilPrompt 
+			|| daysSinceLastSeen > config.daysBeforeReminding;
+	}
 };
 
 /**
@@ -98,7 +110,9 @@ export default class RatingRequester {
 	 *									eventsUntilPrompt: {number},
 	 *									usesUntilPrompt: {number},
 	 *									daysBeforeReminding: {number},
+	 *									showIsEnjoyingDialog: {bool},
 	 *									debug: {bool},
+	 *									timingFunction: {function}
 	 * 								}
 	 */
 	constructor(iOSAppStoreId, androidAppStoreId, config) {
@@ -112,29 +126,12 @@ export default class RatingRequester {
 		this.config.iOSAppStoreId = iOSAppStoreId;
 		this.config.androidAppStoreId = androidAppStoreId;
 
-		this.isAwaitingRating = this.isAwaitingRating.bind(this);
 		_.bindAll(this,
-			'isAwaitingRating',
 			'showRatingDialog',
 			'checkToShowDialog',
 			'handleUse',
 			'handlePositiveEvent',
 		);
-	}
-
-	async isAwaitingRating() {
-		let timestamps = await RatingsData.getActionTimestamps();
-		let rated = timestamps[0];
-		let declined = timestamps[1];
-		let daysSinceLastSeen = Math.floor((Date.now() - parseInt(timestamps[2]))/1000/60/60/24);
-		if (!this.config.debug && [rated, declined].some((time) => time[1] !== null)) {
-			return false;
-		}
-
-		let usesCount = await RatingsData.getUsesCount();
-		let eventCounts = await RatingsData.getEventCount();
-
-		return this.config.debug || usesCount >= this.config.usesUntilPrompt || eventCounts >= this.config.eventsUntilPrompt || daysSinceLastSeen > this.config.daysBeforeReminding;
 	}
 
 	/**
@@ -148,8 +145,8 @@ export default class RatingRequester {
 		await RatingsData.recordRatingSeen();
 
 		let storeUrl = Platform.OS === 'ios' ?
-			'http://itunes.apple.com/WebObjects/MZStore.woa/wa/viewContentsUserReviews?id=' + this.config.iOSAppStoreId + '&pageNumber=0&sortOrdering=2&type=Purple+Software&mt=8' :
-			'market://details?id=' + this.config.androidAppStoreId;
+			`https://itunes.apple.com/app/id${this.config.iOSAppStoreId}?action=write-review` :
+			`market://details?id=${this.config.androidAppStoreId}`;
 
 		if (this.config.showIsEnjoyingDialog)
 			Alert.alert(
@@ -158,7 +155,7 @@ export default class RatingRequester {
 				[
 					{ text: this.config.enjoyingActions.accept, onPress: () => {
 						this.config.callbacks.enjoyingApp();
-						showReviewDialog(storeUrl);
+						showReviewDialog(this.config, storeUrl);
 					}},
 					{ text: this.config.enjoyingActions.decline, onPress: () => {
 						RatingsData.recordDecline();
@@ -167,16 +164,19 @@ export default class RatingRequester {
 				],
 			);
 		else
-			showReviewDialog(storeUrl);
+			showReviewDialog(this.config, storeUrl);
 
 		// clear the events and uses
 		await RatingsData.clearKeys();
 	}
 
 	async checkToShowDialog() {
-		if (await this.isAwaitingRating()) {
+		const timestamps = await RatingsData.getActionTimestamps();
+		const usesCount = await RatingsData.getUsesCount();
+		const eventCounts = await RatingsData.getEventCount();
+
+		if (this.config.timingFunction(this.config, timestamps[0][1], timestamps[1][1], timestamps[2][1], usesCount, eventCounts))
 			this.showRatingDialog();
-		}
 	}
 	async handleUse() {
 		await RatingsData.incrementUsesCount();

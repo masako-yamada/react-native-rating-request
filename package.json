@@ -1,17 +1,17 @@
 {
-  "name": "rn-rating-requester",
-  "version": "3.1.0",
+  "name": "react-native-rating-request",
+  "version": "3.2.3",
   "description": "A React Native component to prompt users for a rating after positive interactions",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "prep-example": "cd example && yarn && cd ../ && mkdir -p example/node_modules/rn-rating-requester/ && tar -c --exclude .git --exclude example . | tar -x -C example/node_modules/rn-rating-requester/ && cd example && react-native link rn-rating-requester",
+    "prep-example": "cd example && yarn && cd ../ && mkdir -p example/node_modules/react-native-rating-request/ && tar -c --exclude .git --exclude example . | tar -x -C example/node_modules/react-native-rating-request/ && cd example && react-native link react-native-rating-request",
     "example-ios": "npm run prep-example; cd example; react-native run-ios",
     "example-android": "npm run prep-example; cd example; react-native run-android"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/rizzomichaelg/rn-rating-requester.git"
+    "url": "git+https://github.com/sandrocaseiro/react-native-rating-request.git"
   },
   "keywords": [
     "react",
@@ -22,12 +22,12 @@
     "ratings",
     "reviews"
   ],
-  "author": "Mike Rizzo",
+  "author": "Sandro Caseiro",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/rizzomichaelg/rn-rating-requester/issues"
+    "url": "https://github.com/sandrocaseiro/react-native-rating-request/issues"
   },
-  "homepage": "https://github.com/rizzomichaelg/rn-rating-requester#readme",
+  "homepage": "https://github.com/sandrocaseiro/react-native-rating-request#readme",
   "peerDependencies": {
     "react-native": ">= 0.20.0"
   },

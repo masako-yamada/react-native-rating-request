@@ -79,6 +79,7 @@ You *must* pass in a string as the first parameter, which is the app store ID of
     usesUntilPrompt: {number},
     daysBeforeReminding: {number},
     showIsEnjoyingDialog: {bool},
+    showRateReviewDialogIOS: [bool],
     debug: {bool},
     timingFunction: {function}
   }
@@ -95,8 +96,9 @@ You *must* pass in a string as the first parameter, which is the app store ID of
   - `decline`: The "no thanks, I don't want to ever rate this" button label
   - `delay`: The "maybe I'll rate this later if I'm feeling charitable" button label
   - `accept`: The "oh my gosh I love this app so much so I'll rate it right now" button label
-  - `showIsEnjoyingDialog`: A boolean to show the "Are you enjoying this app?" dialog before showing the rating dialog
-  - `timingFunction`: A method that takes the configuration object, the rated and declined date, the current total count of uses and the current total count of positive events.
+- `showIsEnjoyingDialog`: A boolean to show the "Are you enjoying this app?" dialog before showing the rating dialog
+- `showRateReviewDialogIOS`: A boolean to show a alert asking the user for the rating, before showing the actual rating alert (Only IOS)
+- `timingFunction`: A method that takes the configuration object, the rated and declined date, the current total count of uses and the current total count of positive events.
 
 
 ````javascript
@@ -122,8 +124,11 @@ and
 
 ## Releases
 
+### 3.2.4
+  - Added `showRateReviewDialogIOS` configuration.
+
 ### 3.2.3
-- Added `showIsEnjoyingDialog` and `timingFunction` configurations
+- Added `showIsEnjoyingDialog` and `timingFunction` configurations.
 
 ### 3.1.0
 - Added "Are you enjoying this app?" dialog before actually requesting a rating.

@@ -17,8 +17,7 @@ function requestReview() {
 }
 
 function showReviewDialog(config, storeUrl) {
-	
-	if (Platform.OS === 'ios' && SKStoreReviewAvailable)
+	if (Platform.OS === 'ios' && SKStoreReviewAvailable && !config.showRateReviewDialogIOS)
 		StoreReview.requestReview();
 	else {
 		Alert.alert(
@@ -26,7 +25,11 @@ function showReviewDialog(config, storeUrl) {
 			config.message, 
 			[
 				{ text: config.actionLabels.accept, onPress: () => { 
-					Linking.openURL(storeUrl);
+					if (Platform.OS === 'ios' && SKStoreReviewAvailable)
+						StoreReview.requestReview();
+					else
+						Linking.openURL(storeUrl);
+					
 					RatingsData.recordRated(); 
 					config.callbacks.accept();
 				} },
@@ -63,6 +66,7 @@ const defaultConfig = {
 	usesUntilPrompt: 1,
 	daysBeforeReminding: 1,
 	showIsEnjoyingDialog: true,
+	showRateReviewDialogIOS: true,
 	debug: false,
 	timingFunction: (config, ratedTimestamp, declinedTimestamp, lastSeenTimestamp, usesCount, eventCounts) => {
 		let daysSinceLastSeen = Math.floor((Date.now() - parseInt(lastSeenTimestamp))/1000/60/60/24);
@@ -111,6 +115,8 @@ export default class RatingRequester {
 	 *									usesUntilPrompt: {number},
 	 *									daysBeforeReminding: {number},
 	 *									showIsEnjoyingDialog: {bool},
+	 *									showRateReviewDialogIOS: {bool}
+	 *									show
 	 *									debug: {bool},
 	 *									timingFunction: {function}
 	 * 								}

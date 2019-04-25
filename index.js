@@ -21,20 +21,22 @@ function showReviewDialog(config, storeUrl) {
 		StoreReview.requestReview();
 	else {
 		Alert.alert(
-			config.title, 
-			config.message, 
+			config.title,
+			config.message,
+      // Three buttons mean 'neutral', 'negative', 'positive' (such as 'Later', 'Cancel', 'OK')
+      // https://facebook.github.io/react-native/docs/alert
 			[
-				{ text: config.actionLabels.accept, onPress: () => { 
+				{ text: config.actionLabels.delay, onPress: () => { config.callbacks.delay(); } },
+				{ text: config.actionLabels.decline, onPress: () => { RatingsData.recordDecline(); config.callbacks.decline(); } },
+        { text: config.actionLabels.accept, onPress: () => {
 					if (Platform.OS === 'ios' && SKStoreReviewAvailable)
 						StoreReview.requestReview();
 					else
 						Linking.openURL(storeUrl);
-					
-					RatingsData.recordRated(); 
+
+					RatingsData.recordRated();
 					config.callbacks.accept();
 				} },
-				{ text: config.actionLabels.delay, onPress: () => { config.callbacks.delay(); } },
-				{ text: config.actionLabels.decline, onPress: () => { RatingsData.recordDecline(); config.callbacks.decline(); } },
 			]
 		);
 	}
@@ -73,10 +75,10 @@ const defaultConfig = {
 		if (!config.debug && [ratedTimestamp, declinedTimestamp].some((time) => time[1] !== null)) {
 			return false;
 		}
-		
-		return config.debug 
-			|| usesCount >= config.usesUntilPrompt 
-			|| eventCounts >= config.eventsUntilPrompt 
+
+		return config.debug
+			|| usesCount >= config.usesUntilPrompt
+			|| eventCounts >= config.eventsUntilPrompt
 			|| daysSinceLastSeen > config.daysBeforeReminding;
 	}
 };
@@ -158,15 +160,17 @@ export default class RatingRequester {
 			Alert.alert(
 				this.config.enjoyingMessage,
 				'',
+        // Two buttons mean 'negative', 'positive' (such as 'Cancel', 'OK')
+        // https://facebook.github.io/react-native/docs/alert
 				[
+          { text: this.config.enjoyingActions.decline, onPress: () => {
+						RatingsData.recordDecline();
+						this.config.callbacks.notEnjoyingApp();
+					}, style: 'cancel'},
 					{ text: this.config.enjoyingActions.accept, onPress: () => {
 						this.config.callbacks.enjoyingApp();
 						showReviewDialog(this.config, storeUrl);
 					}},
-					{ text: this.config.enjoyingActions.decline, onPress: () => {
-						RatingsData.recordDecline();
-						this.config.callbacks.notEnjoyingApp();
-					}, style: 'cancel'},
 				],
 			);
 		else
